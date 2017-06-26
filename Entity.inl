@@ -155,8 +155,9 @@ void Entity::Delete() {
 
 template<class ... Required>
 void ISystem<Required...>::Update(EntityManager * manager, float delta) {
-	manager->Each<Required...>([this, delta](Entity * entity, Required * ... args) {
-		this->OnUpdate(delta, entity, args...);
+	this->delta = delta;
+	manager->Each<Required...>([this](Entity * entity, Required * ... args) {
+		this->OnUpdate(entity, args...);
 	});
 }
 

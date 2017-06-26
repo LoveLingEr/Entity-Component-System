@@ -94,6 +94,8 @@ private:
  */
 template<class ... Required>
 struct ISystem {
+	float delta;
+
 	/**
 	 * Invoke process entities with required components.
 	 *
@@ -105,11 +107,10 @@ struct ISystem {
 	/**
 	 * [Callback of Update] Process entity with required components.
 	 *
-	 * \param	delta	Delta time between last update.
 	 * \param	entity	Entity found with required components.
 	 * \param	...		Components attached to this entity.
 	 */
-	virtual void OnUpdate(float delta, Entity * entity, Required * ...) = 0;
+	virtual void OnUpdate(Entity * entity, Required * ...) = 0;
 };
 
 /**

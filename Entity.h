@@ -94,6 +94,9 @@ private:
  */
 template<class ... Required>
 struct ISystem {
+	/**
+	 * Delta time post by Update.
+	 */
 	float delta;
 
 	/**

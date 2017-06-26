@@ -66,7 +66,10 @@ void EntityManager::__EndEach() {
 
 		for (size_t i = 0; i < _invalids.size(); ++i) {
 			Block * p = _entities[_invalids[i]];
-			Destroy(&p->entity);
+			for (int j = 0; j < COMPONENT_MAX_TYPE; ++j) {
+				if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
+			}
+			_entity_allocator->Free(p);
 		}
 	}
 }

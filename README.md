@@ -18,7 +18,7 @@ struct Name {
 	~Name() { std::cout << "Delete : " << name << std::endl; }
 };
 
-struct DemoSystem : public System<Position, Name> {
+struct DemoSystem : public ISystem<Position, Name> {
 	virtual void OnUpdate(float delta, Entity * entity, Position * p, Name * n) override {
 		std::cout << "[P&N BY DEMOSYSTEM]" << entity->Id() << ". Name : " << n->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
 	}

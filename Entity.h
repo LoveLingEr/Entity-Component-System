@@ -122,7 +122,7 @@ public:
 	/**
 	 * Create a new component & attach it to some entity.
 	 *
-	 * \param	entity	Attach to which
+	 * \param	entity	Attach to which entity.
 	 * \param	...		Parameters to create this component.
 	 * \return	Added component.
 	 */
@@ -141,7 +141,7 @@ public:
 	/**
 	 * Delete special component from some entity.
 	 *
-	 * \param	entity	Entity.
+	 * \param	entity	Entity instance that hold this component.
 	 */
 	template<class C>
 	void DeleteComponent(Entity * entity);
@@ -149,7 +149,7 @@ public:
 	/**
 	 * Query entity has all given type of components.
 	 *
-	 * \param f	Callback to deal with those entity.
+	 * \param f	Callback to deal with those entities.
 	 */
 	template<class C1>
 	void Each(std::function<void(Entity *, C1 *)> f);

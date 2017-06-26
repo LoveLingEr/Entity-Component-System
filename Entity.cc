@@ -60,16 +60,16 @@ void EntityManager::__BeginEach() {
 
 void EntityManager::__EndEach() {
 	_depth--;
+	
+	if (_depth > 0) return;
+	_depth = 0;
 
-	if (_depth <= 0) {
-		_depth = 0;
-
-		for (size_t i = 0; i < _invalids.size(); ++i) {
-			Block * p = _entities[_invalids[i]];
-			for (int j = 0; j < COMPONENT_MAX_TYPE; ++j) {
-				if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
-			}
-			_entity_allocator->Free(p);
+	for (size_t i = 0; i < _invalids.size(); ++i) {
+		Block * p = _entities[_invalids[i]];
+		for (int j = 0; j < COMPONENT_MAX_TYPE; ++j) {
+			if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
 		}
+		_invalids.clear();
+		_entity_allocator->Free(p);
 	}
 }

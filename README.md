@@ -19,7 +19,7 @@ struct Name {
 };
 
 struct DemoSystem : public ISystem<Position, Name> {
-	virtual void OnUpdate(float delta, Entity * entity, Position * p, Name * n) override {
+	virtual void OnUpdate(Entity * entity, Position * p, Name * n) override {
 		std::cout << "[P&N BY DEMOSYSTEM]" << entity->Id() << ". Name : " << n->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
 	}
 };

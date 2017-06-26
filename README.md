@@ -18,6 +18,12 @@ struct Name {
 	~Name() { std::cout << "Delete : " << name << std::endl; }
 };
 
+struct DemoSystem : public System<Position, Name> {
+	virtual void OnUpdate(float delta, Entity * entity, Position * p, Name * n) override {
+		std::cout << "[P&N BY DEMOSYSTEM]" << entity->Id() << ". Name : " << n->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
+	}
+};
+
 int main() {
 	EntityManager manager;
 
@@ -48,6 +54,11 @@ int main() {
 	manager.Each<Position, Name>([](Entity * entity, Position * p, Name * name) {
 		std::cout << "[P&N]" << entity->Id() << ". Name : " << name->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
 	});
+
+	{
+		DemoSystem system;
+		system.Update(&manager, 0);
+	}
 
 	for (int i = 21; i <= 30; ++i) {
 		Entity * p = manager.Find(i);

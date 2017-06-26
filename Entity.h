@@ -6,8 +6,8 @@
 #include	<cstdint>
 #include	<cstdlib>
 #include	<cstring>
-#include	<functional>
 #include	<map>
+#include	<set>
 #include	<vector>
 
 #define		COMPONENT_MAX_TYPE	64
@@ -46,6 +46,11 @@ public:
 	inline uint32_t Id() const { return _id; }
 
 	/**
+	 * Get owner manager.
+	 */
+	inline EntityManager * Owner() const { return _manager; }
+
+	/**
 	 * Test if there exists a component as given type attached to this entity.
 	 */
 	template<class C>
@@ -82,6 +87,29 @@ private:
 	uint32_t		_id;
 	Mask			_mask;
 	bool			_valid;
+};
+
+/**
+ * System for Entity-Component-System framework.
+ */
+template<class ... Required>
+struct ISystem {
+	/**
+	 * Invoke process entities with required components.
+	 *
+	 * \param	manager	Entity manager hold entities to be query.
+	 * \param	delta	Delta time between last update.
+	 */
+	void Update(EntityManager * manager, float delta);
+
+	/**
+	 * [Callback of Update] Process entity with required components.
+	 *
+	 * \param	delta	Delta time between last update.
+	 * \param	entity	Entity found with required components.
+	 * \param	...		Components attached to this entity.
+	 */
+	virtual void OnUpdate(float delta, Entity * entity, Required * ...) = 0;
 };
 
 /**
@@ -149,18 +177,10 @@ public:
 	/**
 	 * Query entity has all given type of components.
 	 *
-	 * \param f	Callback to deal with those entities.
+	 * \param f	Callback to deal with those entities. Type : void(Entity *, Required *...)
 	 */
-	template<class C1>
-	void Each(std::function<void(Entity *, C1 *)> f);
-	template<class C1, class C2>
-	void Each(std::function<void(Entity *, C1 *, C2 *)> f);
-	template<class C1, class C2, class C3>
-	void Each(std::function<void(Entity *, C1 *, C2 *, C3 *)> f);
-	template<class C1, class C2, class C3, class C4>
-	void Each(std::function<void(Entity *, C1 *, C2 *, C3 *, C4 *)> f);
-	template<class C1, class C2, class C3, class C4, class C5>
-	void Each(std::function<void(Entity *, C1 *, C2 *, C3 *, C4 *, C5 *)> f);
+	template<class ... Required, class F>
+	void Each(F f);
 
 private:
 	void __BeginEach();

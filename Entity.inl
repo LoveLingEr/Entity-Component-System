@@ -11,6 +11,30 @@ private:
 	static int	_counter;
 };
 
+template<int N, class Head, class ... Tail>
+struct MaskGen {
+	static void Set(Mask & mask) {
+		mask.set(TypeOf::Id<Head>());
+		MaskGen<N - 1, Tail...>::Set(mask);
+	}
+};
+
+template<class Head, class ... Tail>
+struct MaskGen<1, Head, Tail...> {
+	static void Set(Mask & mask) {
+		mask.set(TypeOf::Id<Head>());
+	}
+};
+
+template<class ... Args>
+struct MaskOf {
+	static Mask Make() {
+		Mask mask;
+		MaskGen<sizeof...(Args), Args...>::Set(mask);
+		return std::move(mask);
+	}
+};
+
 template<class T>
 class Allocator : public IAllocator {
 	struct Chunk {
@@ -129,6 +153,13 @@ void Entity::Delete() {
 	return _manager->DeleteComponent<C>(this);
 }
 
+template<class ... Required>
+void ISystem<Required...>::Update(EntityManager * manager, float delta) {
+	manager->Each<Required...>([this, delta](Entity * entity, Required * ... args) {
+		this->OnUpdate(delta, entity, args...);
+	});
+}
+
 template<class C, typename ... Args>
 C * EntityManager::AddComponent(Entity * entity, Args ... args) {
 	int type = TypeOf::Id<C>();
@@ -153,7 +184,7 @@ template<class C>
 C * EntityManager::GetComponent(Entity * entity) {
 	int type = TypeOf::Id<C>();
 	Block * p = (Block *)entity;
-	return p->components[type];
+	return (C *)p->components[type];
 }
 
 template<class C>
@@ -167,105 +198,14 @@ void EntityManager::DeleteComponent(Entity * entity) {
 	}
 }
 
-template<class C1>
-void EntityManager::Each(std::function<void(Entity *, C1 *)> f) {
+template<class ... Required, class F>
+void EntityManager::Each(F f) {
 	__BeginEach();
 
-	int type = TypeOf::Id<C1>();
-	Mask mask;
-	mask.set(type);
-
+	Mask mask = MaskOf<Required...>::Make();
 	for (auto & kv : _entities) {
-		Block * p = kv.second;
-		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[type]);
-	}
-
-	__EndEach();
-}
-
-template<class C1, class C2>
-void EntityManager::Each(std::function<void(Entity *, C1 *, C2 *)> f) {
-	__BeginEach();
-
-	int t1 = TypeOf::Id<C1>();
-	int t2 = TypeOf::Id<C2>();
-
-	Mask mask;
-	mask.set(t1);
-	mask.set(t2);
-
-	for (auto & kv : _entities) {
-		Block * p = kv.second;
-		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[t1], (C2 *)p->components[t2]);
-	}
-
-	__EndEach();
-}
-
-template<class C1, class C2, class C3>
-void EntityManager::Each(std::function<void(Entity *, C1 *, C2 *, C3 *)> f) {
-	__BeginEach();
-
-	int t1 = TypeOf::Id<C1>();
-	int t2 = TypeOf::Id<C2>();
-	int t3 = TypeOf::Id<C3>();
-
-	Mask mask;
-	mask.set(t1);
-	mask.set(t2);
-	mask.set(t3);
-
-	for (auto & kv : _entities) {
-		Block * p = kv.second;
-		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[t1], (C2 *)p->components[t2], (C3 *)p->components[t3]);
-	}
-
-	__EndEach();
-}
-
-template<class C1, class C2, class C3, class C4>
-void EntityManager::Each(std::function<void(Entity *, C1 *, C2 *, C3 *, C4 *)> f) {
-	__BeginEach();
-
-	int t1 = TypeOf::Id<C1>();
-	int t2 = TypeOf::Id<C2>();
-	int t3 = TypeOf::Id<C3>();
-	int t4 = TypeOf::Id<C4>();
-
-	Mask mask;
-	mask.set(t1);
-	mask.set(t2);
-	mask.set(t3);
-	mask.set(t4);
-
-	for (auto & kv : _entities) {
-		Block * p = kv.second;
-		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[t1], (C2 *)p->components[t2], (C3 *)p->components[t3], (C4 *)p->components[t4]);
-	}
-
-	__EndEach();
-}
-
-template<class C1, class C2, class C3, class C4, class C5>
-void EntityManager::Each(std::function<void(Entity *, C1 *, C2 *, C3 *, C4 *, C5 *)> f) {
-	__BeginEach();
-
-	int t1 = TypeOf::Id<C1>();
-	int t2 = TypeOf::Id<C2>();
-	int t3 = TypeOf::Id<C3>();
-	int t4 = TypeOf::Id<C4>();
-	int t5 = TypeOf::Id<C5>();
-
-	Mask mask;
-	mask.set(t1);
-	mask.set(t2);
-	mask.set(t3);
-	mask.set(t4);
-	mask.set(t5);
-
-	for (auto & kv : _entities) {
-		Block * p = kv.second;
-		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[t1], (C2 *)p->components[t2], (C3 *)p->components[t3], (C4 *)p->components[t4], (C5 *)p->components[t5]);
+		Entity * p = (Entity *)kv.second;
+		if ((p->_mask & mask) == mask) f(p, (Required *)((Block *)p)->components[TypeOf::Id<Required>()] ...);
 	}
 
 	__EndEach();

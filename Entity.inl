@@ -265,7 +265,7 @@ void EntityManager::Each(std::function<void(Entity *, C1 *, C2 *, C3 *, C4 *, C5
 
 	for (auto & kv : _entities) {
 		Block * p = kv.second;
-		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[t1], (C2 *)p->components[t2], (C3 *)p->components[t3], (C4 *)->components[t4], (C5 *)p->components[t5]);
+		if ((p->entity._mask & mask) == mask) f(&p->entity, (C1 *)p->components[t1], (C2 *)p->components[t2], (C3 *)p->components[t3], (C4 *)p->components[t4], (C5 *)p->components[t5]);
 	}
 
 	__EndEach();

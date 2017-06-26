@@ -15,7 +15,9 @@
 /**
  * Generate allocator
  */
-struct IAllocator { virtual void Free(void *) = 0; };
+struct IAllocator {
+	virtual void Free(void *) = 0;
+};
 
 /**
  * Component having status mask.
@@ -25,6 +27,7 @@ typedef std::bitset<COMPONENT_MAX_TYPE> Mask;
 /**
  * Entity definition for Entity-Component-System framework.
  */
+class EntityManager;
 class Entity {
 	friend class EntityManager;
 

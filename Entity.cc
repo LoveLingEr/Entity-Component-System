@@ -51,6 +51,7 @@ void EntityManager::Destroy(Entity * entity) {
 		if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
 	}
 
+	_entities.erase(entity->Id());
 	_entity_allocator->Free(p);
 }
 
@@ -69,7 +70,9 @@ void EntityManager::__EndEach() {
 		for (int j = 0; j < COMPONENT_MAX_TYPE; ++j) {
 			if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
 		}
-		_invalids.clear();
+		_entities.erase(p->entity.Id());
 		_entity_allocator->Free(p);
 	}
+
+	_invalids.clear();
 }

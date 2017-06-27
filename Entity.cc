@@ -55,6 +55,12 @@ void EntityManager::Destroy(Entity * entity) {
 	_entity_allocator->Free(p);
 }
 
+void EntityManager::Traverse(std::function<void(Entity *)> f) {
+	__BeginEach();
+	for (auto & kv : _entities) f(&kv.second->entity);
+	__EndEach();
+}
+
 void EntityManager::__BeginEach() {
 	_depth++;
 }
@@ -68,7 +74,7 @@ void EntityManager::__EndEach() {
 	for (size_t i = 0; i < _invalids.size(); ++i) {
 		Block * p = _entities[_invalids[i]];
 		for (int j = 0; j < COMPONENT_MAX_TYPE; ++j) {
-			if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
+			if (p->components[j]) _component_allocator[j]->Free(p->components[j]);
 		}
 		_entities.erase(p->entity.Id());
 		_entity_allocator->Free(p);

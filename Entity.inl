@@ -135,6 +135,12 @@ bool Entity::Has() {
 	return _mask.test(TypeOf::Id<C>());
 }
 
+inline bool Entity::Test(Mask & mask) const {
+	bool * valid = (bool *)(((char *)this) + sizeof(Entity));
+	if (!(*valid)) return false;
+	return (mask & _mask) == mask;
+}
+
 template<class C, typename ... Args>
 C * Entity::Add(Args ... args) {
 	int type = TypeOf::Id<C>();

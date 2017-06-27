@@ -1,6 +1,6 @@
 #Entity-Component-System
 
-## 示例
+## Demo
 
 ```cpp
 #include	"Entity.h"
@@ -57,12 +57,17 @@ int main() {
 
 	{
 		DemoSystem system;
-		system.Update(&manager, 0);
-	}
 
-	for (int i = 21; i <= 30; ++i) {
-		Entity * p = manager.Find(i);
-		if (p) p->Destroy();
+		//! General way 
+		std::cout << "---------- General Way ---------------" << std::endl;
+		system.Update(&manager, 0);
+
+		//! Another way
+		std::cout << "---------- Another Way ---------------" << std::endl;
+		manager.Traverse([&system](Entity * entity) {
+			system.Update(entity, 0);
+			entity->Destroy();
+		});
 	}
 
 	return 0;

@@ -6,6 +6,7 @@
 #include	<cstdint>
 #include	<cstdlib>
 #include	<cstring>
+#include	<functional>
 #include	<map>
 #include	<set>
 #include	<vector>
@@ -53,7 +54,7 @@ public:
 	 *
 	 * \param	mask	Component mask.
 	 */
-	inline bool Test(Mask & mask) const { return (_mask & mask) == mask; }
+	bool Test(Mask & mask) const;
 
 	/**
 	 * Test if there exists a component as given type attached to this entity.
@@ -112,7 +113,7 @@ struct ISystem {
 	void Update(EntityManager * manager, float delta);
 
 	/**
-	 * Invoke proccess special entity with required components.
+	 * Invoke process special entity with required components.
 	 *
 	 * \param	entity	Single entity you want to process.
 	 * \param	delta	Delta time.
@@ -198,6 +199,11 @@ public:
 	 */
 	template<class ... Required, class F>
 	void Each(F f);
+
+	/**
+	 * Query all entities.
+	 */
+	void Traverse(std::function<void(Entity *)> f);
 
 private:
 	void __BeginEach();

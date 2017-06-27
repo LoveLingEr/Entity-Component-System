@@ -18,14 +18,33 @@ struct Name {
 	~Name() { std::cout << "Delete : " << name << std::endl; }
 };
 
+struct DeleteEvent {
+	uint32_t id;
+	DeleteEvent(uint32_t id) : id(id) {}
+};
+
 struct DemoSystem : public ISystem<Position, Name> {
 	virtual void OnUpdate(Entity * entity, Position * p, Name * n) override {
 		std::cout << "[P&N BY DEMOSYSTEM]" << entity->Id() << ". Name : " << n->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
+
+		manager->Raise<DeleteEvent>(entity->Id());
+		entity->Destroy();
+	}
+};
+
+struct DemoReceiver : public IReceiver<DeleteEvent> {
+	virtual void OnEvent(DeleteEvent & ev) override {
+		std::cout << "[RECEIVER] Delete : " << ev.id << std::endl;
 	}
 };
 
 int main() {
 	EntityManager manager;
+	DemoSystem system;
+	DemoReceiver receiver;
+
+	// This manager will receive DeleteEvent.
+	manager.Receiver(&receiver);
 
 	for (int i = 0; i < 10; ++i) {
 		Entity * entity = manager.Create();
@@ -55,21 +74,13 @@ int main() {
 		std::cout << "[P&N]" << entity->Id() << ". Name : " << name->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
 	});
 
-	{
-		DemoSystem system;
+	//! General way 
+	system.Update(&manager, 0);
 
-		//! General way 
-		std::cout << "---------- General Way ---------------" << std::endl;
-		system.Update(&manager, 0);
-
-		//! Another way
-		std::cout << "---------- Another Way ---------------" << std::endl;
-		manager.Traverse([&system](Entity * entity) {
-			system.Update(entity, 0);
-			entity->Destroy();
-		});
-	}
-
+	/*
+	//! Another way
+	manager.Traverse([&system](Entity * entity) { system.Update(entity, 0); });
+	*/
 	return 0;
 }
 ```

@@ -1,6 +1,7 @@
 #include	"Entity.h"
 
-int TypeOf::_counter = 0;
+int TypeOf::_components = 0;
+int TypeOf::_events = 0;
 
 void Entity::Destroy() {
 	_manager->Destroy(this);
@@ -12,7 +13,9 @@ EntityManager::EntityManager()
 	, _entities()
 	, _entity_allocator(new Allocator<Block>(16))
 	, _component_allocator()
+	, _listeners()
 	, _invalids() {
+	for (int i = 0; i < EVENT_MAX_TYPE; ++i) _listeners.push_back(std::set<void *>());
 }
 
 EntityManager::~EntityManager() {

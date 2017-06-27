@@ -12,23 +12,20 @@
 #include	<vector>
 
 #define		COMPONENT_MAX_TYPE	64
+#define		EVENT_MAX_TYPE		64
 
-/**
- * Generate allocator
- */
-struct IAllocator {
-	virtual void Free(void *) = 0;
-};
-
-/**
- * Component having status mask.
- */
+struct IAllocator { virtual void Free(void *) = 0; };
 typedef std::bitset<COMPONENT_MAX_TYPE> Mask;
+
+/**
+ * Declarations.
+ */
+class Entity;
+class EntityManager;
 
 /**
  * Entity definition for Entity-Component-System framework.
  */
-class EntityManager;
 class Entity {
 public:
 	Entity(EntityManager * manager, uint32_t id) : _manager(manager), _id(id), _mask() {}
@@ -105,6 +102,11 @@ struct ISystem {
 	float delta;
 
 	/**
+	 * Current entity manager. DO NOT use this out of OnUpdate.
+	 */
+	EntityManager * manager;
+
+	/**
 	 * Invoke process entities with required components.
 	 *
 	 * \param	manager	Entity manager hold entities to be query.
@@ -127,6 +129,24 @@ struct ISystem {
 	 * \param	...		Components attached to this entity.
 	 */
 	virtual void OnUpdate(Entity * entity, Required * ...) = 0;
+};
+
+/**
+ * Event receiver
+ */
+template<class E>
+struct IReceiver {
+	/**
+	 * Get event filter.
+	 */
+	int Filter() const;
+	
+	/**
+	 * Interface for receive event.
+	 *
+	 * \param	ev	Event data.
+	 */
+	virtual void OnEvent(E & ev) = 0;
 };
 
 /**
@@ -205,6 +225,20 @@ public:
 	 */
 	void Traverse(std::function<void(Entity *)> f);
 
+	/**
+	 * Listen on given event type.
+	 */
+	template<class R>
+	void Receiver(R * listener);
+
+	/**
+	 * Raise an event.
+	 *
+	 * \param	...	Parameter for construct this event.
+	 */
+	template<class E, typename ... Args>
+	void Raise(Args ... args);
+
 private:
 	void __BeginEach();
 	void __EndEach();
@@ -215,6 +249,7 @@ private:
 	std::map<uint32_t, Block *> _entities;
 	IAllocator * _entity_allocator;
 	IAllocator * _component_allocator[COMPONENT_MAX_TYPE];
+	std::vector<std::set<void *>> _listeners;
 	std::vector<uint32_t> _invalids;
 };
 

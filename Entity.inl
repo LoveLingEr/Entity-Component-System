@@ -1,20 +1,28 @@
 class TypeOf {
 public:
 	template<class C>
-	static int	Id() {
-		static int id = _counter++;
+	static int	Component() {
+		static int id = _components++;
 		assert(id < COMPONENT_MAX_TYPE);
 		return id;
 	}
 
+	template<class E>
+	static int Event() {
+		static int id = _events++;
+		assert(id < EVENT_MAX_TYPE);
+		return id;
+	}
+
 private:
-	static int	_counter;
+	static int	_components;
+	static int	_events;
 };
 
 template<int N, class Head, class ... Tail>
 struct MaskGen {
 	static void Set(Mask & mask) {
-		mask.set(TypeOf::Id<Head>());
+		mask.set(TypeOf::Component<Head>());
 		MaskGen<N - 1, Tail...>::Set(mask);
 	}
 };
@@ -22,7 +30,7 @@ struct MaskGen {
 template<class Head, class ... Tail>
 struct MaskGen<1, Head, Tail...> {
 	static void Set(Mask & mask) {
-		mask.set(TypeOf::Id<Head>());
+		mask.set(TypeOf::Component<Head>());
 	}
 };
 
@@ -132,7 +140,7 @@ template<class C>
 bool Entity::Has() {
 	bool * valid = (bool *)(((char *)this) + sizeof(Entity));
 	if (!(*valid)) return false;
-	return _mask.test(TypeOf::Id<C>());
+	return _mask.test(TypeOf::Component<C>());
 }
 
 inline bool Entity::Test(Mask & mask) const {
@@ -143,7 +151,7 @@ inline bool Entity::Test(Mask & mask) const {
 
 template<class C, typename ... Args>
 C * Entity::Add(Args ... args) {
-	int type = TypeOf::Id<C>();
+	int type = TypeOf::Component<C>();
 	if (_mask.test(type)) _manager->DeleteComponent<C>(this);
 	C * component = _manager->AddComponent<C>(this, args...);
 	if (component) _mask.set(type);
@@ -158,15 +166,17 @@ C * Entity::Get() {
 template<class C>
 void Entity::Delete() {
 	_manager->DeleteComponent<C>(this);
-	_mask.set(TypeOf::Id<C>(), false);
+	_mask.set(TypeOf::Component<C>(), false);
 }
 
 template<class ... Required>
 void ISystem<Required...>::Update(EntityManager * manager, float delta) {
 	this->delta = delta;
+	this->manager = manager;
 	manager->Each<Required...>([this](Entity * entity, Required * ... args) {
 		this->OnUpdate(entity, args...);
 	});
+	this->manager = nullptr;
 }
 
 template<class ... Required>
@@ -174,8 +184,15 @@ void ISystem<Required...>::Update(Entity * entity, float delta) {
 	Mask mask = MaskOf<Required...>::Make();
 	if (entity->Test(mask)) {
 		this->delta = delta;
+		this->manager = entity->Owner();
 		this->OnUpdate(entity, entity->Get<Required>() ...);
 	}
+	this->manager = nullptr;
+}
+
+template<class E>
+int IReceiver<E>::Filter() const {
+	return TypeOf::Event<E>();
 }
 
 template<class C, typename ... Args>
@@ -183,7 +200,7 @@ C * EntityManager::AddComponent(Entity * entity, Args ... args) {
 	Block * p = (Block *)entity;
 	if (!p->valid) return nullptr;
 
-	int type = TypeOf::Id<C>();
+	int type = TypeOf::Component<C>();
 	Allocator<C> * allocator = (Allocator<C> *)_component_allocator[type];
 	if (!allocator) {
 		allocator = new Allocator<C>(16);
@@ -197,7 +214,7 @@ C * EntityManager::AddComponent(Entity * entity, Args ... args) {
 
 template<class C>
 C * EntityManager::GetComponent(Entity * entity) {
-	int type = TypeOf::Id<C>();
+	int type = TypeOf::Component<C>();
 	Block * p = (Block *)entity;
 	if (!p->valid) return nullptr;
 	return (C *)p->components[type];
@@ -208,7 +225,7 @@ void EntityManager::DeleteComponent(Entity * entity) {
 	Block * p = (Block *)entity;
 	if (!p->valid) return;
 
-	int type = TypeOf::Id<C>();
+	int type = TypeOf::Component<C>();
 	if (p->components[type]) _component_allocator[type]->Free(p);
 }
 
@@ -219,8 +236,26 @@ void EntityManager::Each(F f) {
 	Mask mask = MaskOf<Required...>::Make();
 	for (auto & kv : _entities) {
 		Entity * p = (Entity *)kv.second;
-		if (p->Test(mask)) f(p, (Required *)((Block *)p)->components[TypeOf::Id<Required>()] ...);
+		if (p->Test(mask)) f(p, (Required *)((Block *)p)->components[TypeOf::Component<Required>()] ...);
 	}
 
 	__EndEach();
+}
+
+template<class R>
+void EntityManager::Receiver(R * listener) {
+	int type = listener->Filter();
+	auto & set = _listeners[type];
+	set.insert(listener);
+}
+
+template<class E, typename ... Args>
+void EntityManager::Raise(Args ... args) {
+	int type = TypeOf::Event<E>();
+	E ev(args...);
+
+	for (void * p : _listeners[type]) {
+		IReceiver<E> * listener = (IReceiver<E> *)p;
+		listener->OnEvent(ev);
+	}
 }

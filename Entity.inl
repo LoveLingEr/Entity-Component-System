@@ -130,27 +130,29 @@ private:
 
 template<class C>
 bool Entity::Has() {
-	if (!_valid) return false;
+	bool * valid = (bool *)(((char *)this) + sizeof(Entity));
+	if (!(*valid)) return false;
 	return _mask.test(TypeOf::Id<C>());
 }
 
 template<class C, typename ... Args>
 C * Entity::Add(Args ... args) {
-	if (!_valid) return nullptr;
-	if (_mask.test(TypeOf::Id<C>())) _manager->DeleteComponent<C>(this);
-	return _manager->AddComponent<C>(this, args...);
+	int type = TypeOf::Id<C>();
+	if (_mask.test(type)) _manager->DeleteComponent<C>(this);
+	C * component = _manager->AddComponent<C>(this, args...);
+	if (component) _mask.set(type);
+	return component;
 }
 
 template<class C>
 C * Entity::Get() {
-	if (!_valid) return nullptr;
 	return _manager->GetComponent<C>(this);
 }
 
 template<class C>
 void Entity::Delete() {
-	if (!_valid) return nullptr;
-	return _manager->DeleteComponent<C>(this);
+	_manager->DeleteComponent<C>(this);
+	_mask.set(TypeOf::Id<C>(), false);
 }
 
 template<class ... Required>
@@ -161,11 +163,21 @@ void ISystem<Required...>::Update(EntityManager * manager, float delta) {
 	});
 }
 
+template<class ... Required>
+void ISystem<Required...>::Update(Entity * entity, float delta) {
+	Mask mask = MaskOf<Required...>::Make();
+	if (entity->Test(mask)) {
+		this->delta = delta;
+		this->OnUpdate(entity, entity->Get<Required>() ...);
+	}
+}
+
 template<class C, typename ... Args>
 C * EntityManager::AddComponent(Entity * entity, Args ... args) {
-	int type = TypeOf::Id<C>();
 	Block * p = (Block *)entity;
+	if (!p->valid) return nullptr;
 
+	int type = TypeOf::Id<C>();
 	Allocator<C> * allocator = (Allocator<C> *)_component_allocator[type];
 	if (!allocator) {
 		allocator = new Allocator<C>(16);
@@ -173,11 +185,7 @@ C * EntityManager::AddComponent(Entity * entity, Args ... args) {
 	}
 
 	C * component = allocator->Alloc(args...);
-	if (component) {
-		p->components[type] = component;
-		entity->_mask.set(type);
-	}
-
+	if (component) p->components[type] = component;
 	return component;
 }
 
@@ -185,18 +193,17 @@ template<class C>
 C * EntityManager::GetComponent(Entity * entity) {
 	int type = TypeOf::Id<C>();
 	Block * p = (Block *)entity;
+	if (!p->valid) return nullptr;
 	return (C *)p->components[type];
 }
 
 template<class C>
 void EntityManager::DeleteComponent(Entity * entity) {
-	int type = TypeOf::Id<C>();
 	Block * p = (Block *)entity;
+	if (!p->valid) return;
 
-	if (p->components[type]) {
-		_component_allocator[type]->Free(p);
-		entity->_mask.set(type, false);
-	}
+	int type = TypeOf::Id<C>();
+	if (p->components[type]) _component_allocator[type]->Free(p);
 }
 
 template<class ... Required, class F>
@@ -206,7 +213,7 @@ void EntityManager::Each(F f) {
 	Mask mask = MaskOf<Required...>::Make();
 	for (auto & kv : _entities) {
 		Entity * p = (Entity *)kv.second;
-		if ((p->_mask & mask) == mask) f(p, (Required *)((Block *)p)->components[TypeOf::Id<Required>()] ...);
+		if (p->Test(mask)) f(p, (Required *)((Block *)p)->components[TypeOf::Id<Required>()] ...);
 	}
 
 	__EndEach();

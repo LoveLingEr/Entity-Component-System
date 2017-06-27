@@ -29,10 +29,8 @@ typedef std::bitset<COMPONENT_MAX_TYPE> Mask;
  */
 class EntityManager;
 class Entity {
-	friend class EntityManager;
-
 public:
-	Entity(EntityManager * manager, uint32_t id) : _manager(manager), _id(id), _mask(), _valid(true) {}
+	Entity(EntityManager * manager, uint32_t id) : _manager(manager), _id(id), _mask() {}
 
 	/**
 	 * Disable delete operations on Entity. You should use \ref Entity::Destroy instead.
@@ -49,6 +47,13 @@ public:
 	 * Get owner manager.
 	 */
 	inline EntityManager * Owner() const { return _manager; }
+
+	/**
+	 * Test if this entity has all the required components.
+	 *
+	 * \param	mask	Component mask.
+	 */
+	inline bool Test(Mask & mask) const { return (_mask & mask) == mask; }
 
 	/**
 	 * Test if there exists a component as given type attached to this entity.
@@ -86,7 +91,6 @@ private:
 	EntityManager *	_manager;
 	uint32_t		_id;
 	Mask			_mask;
-	bool			_valid;
 };
 
 /**
@@ -108,6 +112,14 @@ struct ISystem {
 	void Update(EntityManager * manager, float delta);
 
 	/**
+	 * Invoke proccess special entity with required components.
+	 *
+	 * \param	entity	Single entity you want to process.
+	 * \param	delta	Delta time.
+	 */
+	void Update(Entity * entity, float delta);
+
+	/**
 	 * [Callback of Update] Process entity with required components.
 	 *
 	 * \param	entity	Entity found with required components.
@@ -122,9 +134,10 @@ struct ISystem {
 class EntityManager {
 	struct Block {
 		Entity	entity;
+		bool	valid;
 		void *	components[COMPONENT_MAX_TYPE];
 
-		Block(EntityManager * manager, uint32_t id) : entity(manager, id), components() {}
+		Block(EntityManager * manager, uint32_t id) : entity(manager, id), valid(true), components() {}
 	};
 
 public:

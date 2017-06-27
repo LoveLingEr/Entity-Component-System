@@ -38,15 +38,15 @@ Entity * EntityManager::Find(uint32_t id) {
 }
 
 void EntityManager::Destroy(Entity * entity) {
-	if (!entity || !entity->_valid) return;
-
-	if (_depth > 0) {
-		entity->_valid = false;
-		_invalids.push_back(entity->_id);
-		return;
-	}
+	if (!entity) return;
 
 	Block * p = (Block *)entity;
+	if (_depth > 0) {
+		p->valid = false;
+		_invalids.push_back(entity->Id());
+		return;
+	}
+	
 	for (int i = 0; i < COMPONENT_MAX_TYPE; ++i) {
 		if (p->components[i]) _component_allocator[i]->Free(p->components[i]);
 	}

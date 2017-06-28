@@ -23,18 +23,28 @@ struct DeleteEvent {
 	DeleteEvent(uint32_t id) : id(id) {}
 };
 
+struct NoticeEvent {
+	std::string name;
+	NoticeEvent(const std::string & name) : name(name) {}
+};
+
 struct DemoSystem : public ISystem<Position, Name> {
 	virtual void OnUpdate(Entity * entity, Position * p, Name * n) override {
 		std::cout << "[P&N BY DEMOSYSTEM]" << entity->Id() << ". Name : " << n->name << ". POS : " << p->x << "," << p->y << ", " << p->z << std::endl;
 
 		manager->Raise<DeleteEvent>(entity->Id());
+		manager->Raise<NoticeEvent>(n->name);
 		entity->Destroy();
 	}
 };
 
-struct DemoReceiver : public IReceiver<DeleteEvent> {
+struct DemoReceiver : public IReceiver<DeleteEvent>, public IReceiver<NoticeEvent> {
 	virtual void OnEvent(DeleteEvent & ev) override {
 		std::cout << "[RECEIVER] Delete : " << ev.id << std::endl;
+	}
+
+	virtual void OnEvent(NoticeEvent & ev) override {
+		std::cout << "[RECEIVER] sss : " << ev.name << std::endl;
 	}
 };
 
@@ -43,8 +53,8 @@ int main() {
 	DemoSystem system;
 	DemoReceiver receiver;
 
-	// This manager will receive DeleteEvent.
-	manager.Receiver(&receiver);
+	// This manager will receive DeleteEvent & NoticeEvent.
+	manager.Subscribe<DeleteEvent, NoticeEvent>(&receiver);
 
 	for (int i = 0; i < 10; ++i) {
 		Entity * entity = manager.Create();

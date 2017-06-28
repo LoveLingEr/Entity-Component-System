@@ -1,1 +1,5 @@
 theme: jekyll-theme-slate
+site:
+    github:
+      zip_url: https://github.com/LoveLingEr/Entity-Component-System/zipball/master
+      tar_url: https://github.com/LoveLingEr/Entity-Component-System/tarball/master

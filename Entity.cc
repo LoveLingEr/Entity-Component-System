@@ -7,8 +7,9 @@ void Entity::Destroy() {
 	_manager->Destroy(this);
 }
 
-EntityManager::EntityManager()
-	: _allocated(0)
+EntityManager::EntityManager(void * userdata /* = nullptr */)
+	: _attached(userdata)
+	, _allocated(0)
 	, _depth(0)
 	, _entities()
 	, _entity_allocator(new Allocator<Block>(16))

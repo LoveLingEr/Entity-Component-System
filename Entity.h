@@ -47,6 +47,12 @@ public:
 	inline EntityManager * Owner() const { return _manager; }
 
 	/**
+	 * Get attached user data from its owner.
+	 */
+	template<class T>
+	T * Attached() const;
+
+	/**
 	 * Test if this entity has all the required components.
 	 *
 	 * \param	mask	Component mask.
@@ -384,6 +390,11 @@ private:
 	Chunk *				_pHead;
 	std::vector<char *>	_lMem;
 };
+
+template<class T>
+T * Entity::Attached() const {
+	return _manager->Attached<T>();
+}
 
 template<class C>
 bool Entity::Has() {

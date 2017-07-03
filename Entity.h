@@ -97,25 +97,18 @@ private:
 template<class ... Required>
 struct ISystem {
 	/**
-	 * Delta time post by Update.
-	 */
-	float delta;
-
-	/**
 	 * Invoke process entities with required components.
 	 *
 	 * \param	manager	Entity manager hold entities to be query.
-	 * \param	delta	Delta time between last update.
 	 */
-	void Update(EntityManager * manager, float delta);
+	void Update(EntityManager * manager);
 
 	/**
 	 * Invoke process special entity with required components.
 	 *
 	 * \param	entity	Single entity you want to process.
-	 * \param	delta	Delta time.
 	 */
-	void Update(Entity * entity, float delta);
+	void Update(Entity * entity);
 
 	/**
 	 * [Callback of Update] Process entity with required components.
@@ -426,18 +419,16 @@ void Entity::Delete() {
 }
 
 template<class ... Required>
-void ISystem<Required...>::Update(EntityManager * manager, float delta) {
-	this->delta = delta;
+void ISystem<Required...>::Update(EntityManager * manager) {
 	manager->Each<Required...>([this](Entity * entity, Required * ... args) {
 		this->OnUpdate(entity, args...);
 	});
 }
 
 template<class ... Required>
-void ISystem<Required...>::Update(Entity * entity, float delta) {
+void ISystem<Required...>::Update(Entity * entity) {
 	Mask mask = MaskOf<Required...>::Make();
 	if (entity->Test(mask)) {
-		this->delta = delta;
 		this->OnUpdate(entity, entity->Get<Required>() ...);
 	}
 }

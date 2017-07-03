@@ -86,11 +86,11 @@ int main() {
 	});
 
 	//! General way 
-	system.Update(&manager, 0);
+	system.Update(&manager);
 
 	/*
 	//! Another way
-	manager.Traverse([&system](Entity * entity) { system.Update(entity, 0); });
+	manager.Traverse([&system](Entity * entity) { system.Update(entity); });
 	*/
 	return 0;
 }

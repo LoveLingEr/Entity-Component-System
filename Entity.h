@@ -102,11 +102,6 @@ struct ISystem {
 	float delta;
 
 	/**
-	 * Current entity manager. DO NOT use this out of OnUpdate.
-	 */
-	EntityManager * manager;
-
-	/**
 	 * Invoke process entities with required components.
 	 *
 	 * \param	manager	Entity manager hold entities to be query.
@@ -139,9 +134,10 @@ struct IReceiver {
 	/**
 	* Interface for receive event.
 	*
-	* \param	ev	Event data.
+	* \param	manager	Event comes from.
+	* \param	ev		Event data.
 	*/
-	virtual void OnEvent(E & ev) = 0;
+	virtual void OnEvent(EntityManager * manager, E & ev) = 0;
 };
 
 /**
@@ -157,14 +153,20 @@ class EntityManager {
 	};
 
 public:
-	EntityManager();
+	EntityManager(void * userdata = nullptr);
 	virtual ~EntityManager();
+
+	/**
+	 * Get Attached user data
+	 */
+	template<class T>
+	T * Attached() const { return (T *)_attached; }
 
 	/**
 	 * Alloc an entity.
 	 */
 	Entity * Create();
-
+	
 	/**
 	 * Find an entity by unique identifier.
 	 *
@@ -239,6 +241,7 @@ private:
 	void __EndEach();
 
 private:
+	void * _attached;
 	uint32_t _allocated;
 	int _depth;
 	std::map<uint32_t, Block *> _entities;
@@ -425,11 +428,9 @@ void Entity::Delete() {
 template<class ... Required>
 void ISystem<Required...>::Update(EntityManager * manager, float delta) {
 	this->delta = delta;
-	this->manager = manager;
 	manager->Each<Required...>([this](Entity * entity, Required * ... args) {
 		this->OnUpdate(entity, args...);
 	});
-	this->manager = nullptr;
 }
 
 template<class ... Required>
@@ -437,10 +438,8 @@ void ISystem<Required...>::Update(Entity * entity, float delta) {
 	Mask mask = MaskOf<Required...>::Make();
 	if (entity->Test(mask)) {
 		this->delta = delta;
-		this->manager = entity->Owner();
 		this->OnUpdate(entity, entity->Get<Required>() ...);
 	}
-	this->manager = nullptr;
 }
 
 template<class C, typename ... Args>
@@ -502,7 +501,7 @@ void EntityManager::Raise(Args ... args) {
 
 	for (void * p : _listeners[type]) {
 		IReceiver<E> * listener = (IReceiver<E> *)p;
-		listener->OnEvent(ev);
+		listener->OnEvent(this, ev);
 	}
 }
 

@@ -4,6 +4,7 @@ int TypeOf::_components = 0;
 int TypeOf::_events = 0;
 
 void Entity::Destroy() {
+	if (!_manager) return;
 	_manager->Destroy(this);
 }
 
@@ -41,10 +42,17 @@ Entity * EntityManager::Find(uint32_t id) {
 	return &it->second->entity;
 }
 
+bool EntityManager::IsValid(const Entity * entity) {
+	if (!entity) return false;
+	Block * p = (Block *)entity;
+	return p->valid;
+}
+
 void EntityManager::Destroy(Entity * entity) {
 	if (!entity) return;
 
 	Block * p = (Block *)entity;
+	if (!p->valid) return;
 	if (_depth > 0) {
 		p->valid = false;
 		_invalids.push_back(entity->Id());

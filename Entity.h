@@ -175,6 +175,11 @@ public:
 	Entity * Find(uint32_t id);
 
 	/**
+	 * Check if given entity is valid.
+	 */
+	bool IsValid(const Entity * entity);
+
+	/**
 	 * Destroy an entity.
 	 *
 	 * \param	entity	Entity to be destroyed.
@@ -393,24 +398,25 @@ private:
 
 template<class T>
 T * Entity::Attached() const {
+	if (!_manager || !_manager->IsValid(this)) return nullptr;
 	return _manager->Attached<T>();
 }
 
 template<class C>
 bool Entity::Has() {
-	bool * valid = (bool *)(((char *)this) + sizeof(Entity));
-	if (!(*valid)) return false;
+	if (!_manager || !_manager->IsValid(this)) return false;
 	return _mask.test(TypeOf::Component<C>());
 }
 
 inline bool Entity::Test(Mask & mask) const {
-	bool * valid = (bool *)(((char *)this) + sizeof(Entity));
-	if (!(*valid)) return false;
+	if (!_manager || !_manager->IsValid(this)) return false;
 	return (mask & _mask) == mask;
 }
 
 template<class C, typename ... Args>
-C * Entity::Add(Args ... args) {
+C * Entity::Add(Args ... args) {	
+	if (!_manager || !_manager->IsValid(this)) return nullptr;
+
 	int type = TypeOf::Component<C>();
 	if (_mask.test(type)) _manager->DeleteComponent<C>(this);
 	C * component = _manager->AddComponent<C>(this, args...);
@@ -419,12 +425,14 @@ C * Entity::Add(Args ... args) {
 }
 
 template<class C>
-C * Entity::Get() {
+C * Entity::Get() {	
+	if (!_manager || !_manager->IsValid(this)) return nullptr;
 	return _manager->GetComponent<C>(this);
 }
 
 template<class C>
 void Entity::Delete() {
+	if (!_manager || !_manager->IsValid(this)) return;
 	_manager->DeleteComponent<C>(this);
 	_mask.set(TypeOf::Component<C>(), false);
 }
@@ -475,7 +483,7 @@ void EntityManager::DeleteComponent(Entity * entity) {
 	if (!p->valid) return;
 
 	int type = TypeOf::Component<C>();
-	if (p->components[type]) _component_allocator[type]->Free(p);
+	if (p->components[type]) _component_allocator[type]->Free(p->components[type]);
 }
 
 template<class ... Required, class F>
@@ -484,8 +492,9 @@ void EntityManager::Each(F f) {
 
 	Mask mask = MaskOf<Required...>::Make();
 	for (auto & kv : _entities) {
-		Entity * p = (Entity *)kv.second;
-		if (p->Test(mask)) f(p, (Required *)((Block *)p)->components[TypeOf::Component<Required>()] ...);
+		Block * b = kv.second;
+		Entity * p = &b->entity;
+		if (p->Test(mask)) f(p, (Required *)b->components[TypeOf::Component<Required>()] ...);
 	}
 
 	__EndEach();
